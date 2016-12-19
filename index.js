@@ -51,13 +51,18 @@ var signetTypelog = function (registrar, parser) {
     function isTypeOf(typeDef) {
         return function (value) {
             var predicate = registrar.get(typeDef.type);
+            var result = false;
 
             if (typeof predicate.parentTypeName === 'undefined') {
-                return true;
+                result =  true;
             } else {
-                var isDeepType = isTypeOf(parser.parseType(predicate.parentTypeName))(value);
-                return isDeepType && validateType(typeDef)(value);
+                var parentTypeDef = parser.parseType(predicate.parentTypeName);
+                parentTypeDef.subtype.concat(typeDef.subtype);
+
+                result = isTypeOf(parentTypeDef)(value) && validateType(typeDef)(value);
             }
+
+            return result;
         };
     }
 
