@@ -7,12 +7,18 @@ var signetValidator = require('signet-validator');
 var signetTypelog = require('../index');
 
 describe('Signet Type Logic System (Typelog)', function () {
-    
+
     var typelog;
 
     function alwaysTrue() {
         return function () {
             return true;
+        };
+    }
+
+    function isType (typeStr) {
+        return function (value) {
+            return typeof value === typeStr;
         };
     }
 
@@ -23,17 +29,17 @@ describe('Signet Type Logic System (Typelog)', function () {
 
     it('should self-register a base * type', function () {
         var isType = typelog.isType('*');
-        assert.equal(isType, true); 
+        assert.equal(isType, true);
     });
 
-    it('should return false with a bad type', function(){
+    it('should return false with a bad type', function () {
         var isType = typelog.isType('badType');
         assert.equal(isType, false);
     });
 
     it('should return true on a newly defined type', function () {
         typelog.define('number', alwaysTrue());
-        
+
         var isType = typelog.isType('number');
         assert.equal(isType, true);
     });
@@ -56,7 +62,7 @@ describe('Signet Type Logic System (Typelog)', function () {
     it('should return true on a check between related non-base types', function () {
         typelog.define('number', alwaysTrue());
         typelog.defineSubtypeOf('number')('int', alwaysTrue());
-        
+
         var isSubtype = typelog.isSubtypeOf('number')('int');
         assert.equal(isSubtype, true);
     });
@@ -64,7 +70,7 @@ describe('Signet Type Logic System (Typelog)', function () {
     it('should return true on a check between nested type and *', function () {
         typelog.define('number', alwaysTrue());
         typelog.defineSubtypeOf('number')('int', alwaysTrue());
-        
+
         var isSubtype = typelog.isSubtypeOf('*')('int');
         assert.equal(isSubtype, true);
     });
@@ -100,5 +106,18 @@ describe('Signet Type Logic System (Typelog)', function () {
 
         assert.equal(result, true);
     });
+
+    it('should return correct type chains', function () {
+        typelog.define('number', isType('number'));
+        typelog.define('object', isType('object'));
+        typelog.defineSubtypeOf('object')('array', function (value) {
+            return Object.prototype.toString.call(value) === '[object Array]';
+        });
+
+        assert.equal(typelog.getTypeChain('array'), '* -> object -> array');
+        assert.equal(typelog.getTypeChain('number'), '* -> number');
+    });
+
+
 
 });

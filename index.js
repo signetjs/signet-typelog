@@ -66,9 +66,19 @@ var signetTypelog = function (registrar, parser) {
         };
     }
 
+    function getTypeChain(typeName) {
+        var predicate = registrar.get(typeName);
+
+        return predicate.parentTypeName !== undefined ?
+            getTypeChain(predicate.parentTypeName) + ' -> ' + typeName :
+            typeName;
+    }
+
+
     return {
         define: defineSubtypeOf('*'),
         defineSubtypeOf: defineSubtypeOf,
+        getTypeChain: getTypeChain,
         isType: isType,
         isTypeOf: isTypeOf,
         isSubtypeOf: isSubtypeOf
