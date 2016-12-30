@@ -1,4 +1,6 @@
 var signetTypelog = function (registrar, parser) {
+    'use strict';
+
     registrar.set('*', function () { return true; });
 
     function validateOptionalType(typeDef) {
@@ -36,23 +38,32 @@ var signetTypelog = function (registrar, parser) {
 
     function isSubtypeOf(parentName) {
         return function (childName) {
-            var predicate = registrar.get(childName);
+            var parentTypeName = registrar.get(childName).parentTypeName;
 
-            if (typeof predicate.parentTypeName === 'undefined') {
-                return false;
-            } else if (predicate.parentTypeName === parentName) {
-                return true;
-            } else {
-                return isSubtypeOf(parentName)(predicate.parentTypeName);
-            }
+            var hasNoParent = typeof parentTypeName === 'undefined';
+            var isParentMatch = parentTypeName === parentName;
+
+            return hasNoParent || isParentMatch ? isParentMatch : isSubtypeOf(parentName)(parentTypeName);
         };
     }
 
-    function identity (value) {
+    function isTypeOf(typeDef) {
+        var processedTypeDef = preprocessSubtypeData(typeDef);
+
+        return function (value) {
+            var predicate = registrar.get(typeDef.type);
+            var parentType = predicate.parentTypeName;
+            var isDone = typeof parentType !== 'undefined';
+
+            return isDone ? verifyType(processedTypeDef, parentType, value) : true;
+        };
+    }
+
+    function identity(value) {
         return value;
     }
 
-    function preprocessSubtypeData (typeDef) {
+    function preprocessSubtypeData(typeDef) {
         var predicate = registrar.get(typeDef.type);
         var preprocess = typeof predicate.preprocess === 'function' ? predicate.preprocess : identity;
 
@@ -60,28 +71,17 @@ var signetTypelog = function (registrar, parser) {
             name: typeDef.name,
             type: typeDef.type,
             subtype: preprocess(typeDef.subtype),
+            originalSubtype: typeDef.subtype,
             optional: typeDef.optional
         };
     }
 
-    function isTypeOf(typeDef) {
-        processedTypeDef = preprocessSubtypeData(typeDef);
+    function verifyType(typeDef, parentType, value) {
+        var parentTypeDef = parser.parseType(parentType);
+        parentTypeDef.subtype.concat(typeDef.originalSubtype);
 
-        return function (value) {
-            var predicate = registrar.get(typeDef.type);
-            var result = false;
+        return isTypeOf(parentTypeDef)(value) && validateType(typeDef)(value);
 
-            if (typeof predicate.parentTypeName === 'undefined') {
-                result =  true;
-            } else {
-                var parentTypeDef = parser.parseType(predicate.parentTypeName);
-                parentTypeDef.subtype.concat(typeDef.subtype);
-
-                result = isTypeOf(parentTypeDef)(value) && validateType(processedTypeDef)(value);
-            }
-
-            return result;
-        };
     }
 
     function getTypeChain(typeName) {
