@@ -48,7 +48,25 @@ var signetTypelog = function (registrar, parser) {
         };
     }
 
+    function identity (value) {
+        return value;
+    }
+
+    function preprocessSubtypeData (typeDef) {
+        var predicate = registrar.get(typeDef.type);
+        var preprocess = typeof predicate.preprocess === 'function' ? predicate.preprocess : identity;
+
+        return {
+            name: typeDef.name,
+            type: typeDef.type,
+            subtype: preprocess(typeDef.subtype),
+            optional: typeDef.optional
+        };
+    }
+
     function isTypeOf(typeDef) {
+        processedTypeDef = preprocessSubtypeData(typeDef);
+
         return function (value) {
             var predicate = registrar.get(typeDef.type);
             var result = false;
@@ -59,7 +77,7 @@ var signetTypelog = function (registrar, parser) {
                 var parentTypeDef = parser.parseType(predicate.parentTypeName);
                 parentTypeDef.subtype.concat(typeDef.subtype);
 
-                result = isTypeOf(parentTypeDef)(value) && validateType(typeDef)(value);
+                result = isTypeOf(parentTypeDef)(value) && validateType(processedTypeDef)(value);
             }
 
             return result;
