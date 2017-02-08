@@ -11,8 +11,9 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^3.1.2",
-    "signet-registrar": "../signet-registrar",
-    "signet-parser": "../signet-parser",
-    "signet-assembler": "../signet-assembler"
+    "signet-registrar": "1.x.x",
+    "signet-parser": "1.x.x",
+    "signet-assembler": "1.x.x",
+    "signet-validator": "1.x.x"
   }
 }
