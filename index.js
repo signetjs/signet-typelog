@@ -117,7 +117,7 @@ var signetTypelog = function (registrar, parser) {
                 return typePred[operator];
             } else if (typeName == '*') {
                 return {
-                    operator: '',
+                    operator: operator,
                     operation: alwaysFalse
                 };
             } else {
