@@ -105,10 +105,6 @@ var signetTypelog = function (registrar, parser) {
         }
     }
 
-    function alwaysFalse() {
-        return false;
-    }
-
     function getDependentOperatorOn(typeName) {
         return function (operator) {
             var typePred = registrar.get(typeName);
@@ -116,10 +112,7 @@ var signetTypelog = function (registrar, parser) {
             if (typeof typePred[operator] === 'object') {
                 return typePred[operator];
             } else if (typeName == '*') {
-                return {
-                    operator: operator,
-                    operation: alwaysFalse
-                };
+                return null;
             } else {
                 return getDependentOperatorOn(typePred.parentTypeName)(operator);
             }
