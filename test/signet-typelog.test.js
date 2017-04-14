@@ -118,6 +118,33 @@ describe('Signet Type Logic System (Typelog)', function () {
         assert.equal(typelog.getTypeChain('number'), '* -> number');
     });
 
+    it('should allow operators to be set on a type', function () {
+        function isLesser (a, b) {
+            return a < b;
+        };
 
+        typelog.define('number', isType('number'));
+        typelog.defineDependentOperatorOn('number')('<', isLesser);
+
+        var operatorDef = typelog.getDependentOperatorOn('number')('<');
+
+        assert.equal(operatorDef.operator, '<');
+        assert.equal(operatorDef.operation, isLesser);
+    });
+
+    it('should find operator on a parent type', function () {
+        function isLesser (a, b) {
+            return a < b;
+        };
+
+        typelog.define('number', isType('number'));
+        typelog.defineDependentOperatorOn('number')('<', isLesser);
+        typelog.defineSubtypeOf('number')('int', function (value) { return Math.floor(value) === value; });
+
+        var operatorDef = typelog.getDependentOperatorOn('int')('<');
+
+        assert.equal(operatorDef.operator, '<');
+        assert.equal(operatorDef.operation, isLesser);
+    });
 
 });

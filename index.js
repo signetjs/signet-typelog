@@ -92,10 +92,45 @@ var signetTypelog = function (registrar, parser) {
             typeName;
     }
 
+    function defineDependentOperatorOn(typeName) {
+        var typePred = registrar.get(typeName);
+
+        return function (operator, operation) {
+            var operatorDef = {
+                operator: operator,
+                operation: operation
+            };
+
+            setImmutableProperty(typePred, operator, operatorDef);
+        }
+    }
+
+    function alwaysFalse() {
+        return false;
+    }
+
+    function getDependentOperatorOn(typeName) {
+        return function (operator) {
+            var typePred = registrar.get(typeName);
+
+            if (typeof typePred[operator] === 'object') {
+                return typePred[operator];
+            } else if (typeName == '*') {
+                return {
+                    operator: '',
+                    operation: alwaysFalse
+                };
+            } else {
+                return getDependentOperatorOn(typePred.parentTypeName)(operator);
+            }
+        }
+    }
 
     return {
         define: defineSubtypeOf('*'),
+        defineDependentOperatorOn: defineDependentOperatorOn,
         defineSubtypeOf: defineSubtypeOf,
+        getDependentOperatorOn: getDependentOperatorOn,
         getTypeChain: getTypeChain,
         isType: isType,
         isTypeOf: isTypeOf,
