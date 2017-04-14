@@ -1,6 +1,6 @@
 {
   "name": "signet-typelog",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Signet type logic system",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,6 @@
     "mocha": "^3.1.2",
     "signet-registrar": "1.x.x",
     "signet-parser": "1.x.x",
-    "signet-assembler": "1.x.x",
-    "signet-validator": "1.x.x"
+    "signet-assembler": "1.x.x"
   }
 }

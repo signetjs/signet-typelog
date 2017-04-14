@@ -2,7 +2,6 @@ var assert = require('chai').assert;
 var signetRegistrar = require('signet-registrar');
 var parser = require('signet-parser');
 var assembler = require('signet-assembler');
-var signetValidator = require('signet-validator');
 
 var signetTypelog = require('../index');
 
