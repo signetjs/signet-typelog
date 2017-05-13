@@ -1,6 +1,6 @@
 {
   "name": "signet-typelog",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Signet type logic system",
   "main": "index.js",
   "scripts": {

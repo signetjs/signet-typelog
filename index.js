@@ -49,17 +49,14 @@ var signetTypelog = function (registrar, parser) {
 
     function isTypeOf(typeDef) {
         var processedTypeDef = preprocessSubtypeData(typeDef);
-        var predicate = registrar.get(typeDef.type);
-        var parentType = predicate.parentTypeName;
-        var isDone = typeof parentType !== 'undefined';
 
-        function checkValueType(value) {
+        return function (value) {
+            var predicate = registrar.get(typeDef.type);
+            var parentType = predicate.parentTypeName;
+            var isDone = typeof parentType !== 'undefined';
+
             return isDone ? verifyType(processedTypeDef, parentType, value) : true;
         };
-
-        return Object.keys(predicate).reduce(function (output, key){
-            checkValueType[key] = predicate[key];
-        }, checkValueType);
     }
 
     function identity(value) {
