@@ -1,6 +1,6 @@
 var runner = require('./test-timer/runner');
 var registrar = require('signet-registrar')();
-var parser = require('signet-parser');
+var parser = require('signet-parser')();
 var typelog = require('../index.js')(registrar, parser);
 
 (function () {

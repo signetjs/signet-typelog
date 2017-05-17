@@ -1,6 +1,6 @@
 var assert = require('chai').assert;
 var signetRegistrar = require('signet-registrar');
-var parser = require('signet-parser');
+var signetParser = require('signet-parser');
 var assembler = require('signet-assembler');
 
 var signetTypelog = require('../index');
@@ -8,6 +8,7 @@ var signetTypelog = require('../index');
 describe('Signet Type Logic System (Typelog)', function () {
 
     var typelog;
+    var parser;
 
     function alwaysTrue() {
         return function () {
@@ -23,6 +24,7 @@ describe('Signet Type Logic System (Typelog)', function () {
 
     beforeEach(function () {
         var registrar = signetRegistrar();
+        parser = signetParser();
         typelog = signetTypelog(registrar, parser);
     });
 
