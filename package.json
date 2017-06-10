@@ -10,9 +10,10 @@
   "license": "MPL-2.0",
   "devDependencies": {
     "chai": "^3.5.0",
+    "eslint": "^3.19.0",
     "mocha": "^3.1.2",
-    "signet-registrar": "2.x.x",
+    "signet-assembler": "1.x.x",
     "signet-parser": "2.x.x",
-    "signet-assembler": "1.x.x"
+    "signet-registrar": "2.x.x"
   }
 }
