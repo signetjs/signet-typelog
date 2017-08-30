@@ -25,10 +25,44 @@ var signetTypelog = function (registrar, parser) {
         });
     }
 
+    function isSubtypeOfFactory(parentTypeName, parentSubtypeCheck) {
+        var cleanSubtypeCheck = typeof parentSubtypeCheck === 'function'
+            ? parentSubtypeCheck
+            : function () { return false; };
+
+        return function (typeName) {
+            return parentTypeName === typeName || cleanSubtypeCheck(typeName);
+        }
+    }
+
+    function buildTypePredicate(parentPredicate, childPredicate) {
+        return function (value, options) {
+            return parentPredicate(value, []) && childPredicate(value, options);
+        }
+    }
+
+    function mergeProps(typePredicate, childPredicate) {
+        return Object
+            .keys(childPredicate)
+            .reduce(function (resultPredicate, key) {
+                resultPredicate[key] = childPredicate[key];
+                return resultPredicate;
+            }, typePredicate);
+    }
+
     function defineSubtypeOf(parentName) {
-        return function (childName, predicate) {
-            setImmutableProperty(predicate, 'parentTypeName', parentName);
-            registrar.set(childName, predicate);
+        var parentPredicate = registrar.get(parentName);
+        var parentSubtypeCheck = parentPredicate.isSubtypeOf;
+
+        return function (childName, childPredicate) {
+            var isSubtypeOfType = isSubtypeOfFactory(parentName, parentSubtypeCheck);
+            var typePredicate = buildTypePredicate(parentPredicate, childPredicate);
+
+            mergeProps(typePredicate, childPredicate);
+            setImmutableProperty(typePredicate, 'parentTypeName', parentName);
+            setImmutableProperty(typePredicate, 'isSubtypeOf', isSubtypeOfType);
+
+            registrar.set(childName, typePredicate);
         };
     }
 
@@ -42,12 +76,8 @@ var signetTypelog = function (registrar, parser) {
 
     function isSubtypeOf(parentName) {
         return function (childName) {
-            var parentTypeName = registrar.get(childName).parentTypeName;
-
-            var hasNoParent = typeof parentTypeName === 'undefined';
-            var isParentMatch = parentTypeName === parentName;
-
-            return hasNoParent || isParentMatch ? isParentMatch : isSubtypeOf(parentName)(parentTypeName);
+            var subtypeCheck = registrar.get(childName).isSubtypeOf;
+            return subtypeCheck(parentName);
         };
     }
 
@@ -91,9 +121,9 @@ var signetTypelog = function (registrar, parser) {
     function getTypeChain(typeName) {
         var predicate = registrar.get(typeName);
 
-        return predicate.parentTypeName !== undefined ?
-            getTypeChain(predicate.parentTypeName) + ' -> ' + typeName :
-            typeName;
+        return predicate.parentTypeName !== undefined
+            ? getTypeChain(predicate.parentTypeName) + ' -> ' + typeName
+            : typeName;
     }
 
     function defineDependentOperatorOn(typeName) {
