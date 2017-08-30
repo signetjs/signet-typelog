@@ -1,4 +1,4 @@
-var signetTypelog = function (registrar, parser) {
+var signetTypelog = function (registrar) {
     'use strict';
 
     registrar.set('*', function () { return true; });
@@ -11,9 +11,11 @@ var signetTypelog = function (registrar, parser) {
 
     function validateType(typeDef) {
         var validateOptional = validateOptionalType(typeDef);
+        var typePredicate = typeDef.predicate;
 
         return function (value) {
-            return registrar.get(typeDef.type)(value, typeDef.subtype) || validateOptional(value);
+            return typePredicate(value, typeDef.subtype) 
+                || validateOptional(value);
         };
     }
 
@@ -25,13 +27,9 @@ var signetTypelog = function (registrar, parser) {
         });
     }
 
-    function isSubtypeOfFactory(parentTypeName, parentSubtypeCheck) {
-        var cleanSubtypeCheck = typeof parentSubtypeCheck === 'function'
-            ? parentSubtypeCheck
-            : function () { return false; };
-
+    function buildSubtypeCheck(parentTypeName, parentSubtypeCheck) {
         return function (typeName) {
-            return parentTypeName === typeName || cleanSubtypeCheck(typeName);
+            return parentTypeName === typeName || parentSubtypeCheck(typeName);
         }
     }
 
@@ -41,26 +39,34 @@ var signetTypelog = function (registrar, parser) {
         }
     }
 
-    function mergeProps(typePredicate, childPredicate) {
+    function merge(destination, source) {
         return Object
-            .keys(childPredicate)
-            .reduce(function (resultPredicate, key) {
-                resultPredicate[key] = childPredicate[key];
-                return resultPredicate;
-            }, typePredicate);
+            .keys(source)
+            .reduce(function (result, key){
+                result[key] = source[key];
+                return result
+            }, destination);
+    }
+
+    function alwaysFalse () { return false; }
+
+    function getSubtypeCheck(predicate) {
+        return typeof predicate.isSubtypeOf === 'function'
+            ? predicate.isSubtypeOf
+            : alwaysFalse;
     }
 
     function defineSubtypeOf(parentName) {
         var parentPredicate = registrar.get(parentName);
-        var parentSubtypeCheck = parentPredicate.isSubtypeOf;
+        var parentSubtypeCheck = getSubtypeCheck(parentPredicate);
 
         return function (childName, childPredicate) {
-            var isSubtypeOfType = isSubtypeOfFactory(parentName, parentSubtypeCheck);
             var typePredicate = buildTypePredicate(parentPredicate, childPredicate);
+            var isSubtypeOfParent = buildSubtypeCheck(parentName, parentSubtypeCheck);
 
-            mergeProps(typePredicate, childPredicate);
+            merge(typePredicate, childPredicate);
             setImmutableProperty(typePredicate, 'parentTypeName', parentName);
-            setImmutableProperty(typePredicate, 'isSubtypeOf', isSubtypeOfType);
+            setImmutableProperty(typePredicate, 'isSubtypeOf', isSubtypeOfParent);
 
             registrar.set(childName, typePredicate);
         };
@@ -85,11 +91,7 @@ var signetTypelog = function (registrar, parser) {
         var processedTypeDef = preprocessSubtypeData(typeDef);
 
         return function (value) {
-            var predicate = registrar.get(typeDef.type);
-            var parentType = predicate.parentTypeName;
-            var isDone = typeof parentType !== 'undefined';
-
-            return isDone ? verifyType(processedTypeDef, parentType, value) : true;
+            return validateType(processedTypeDef)(value);
         };
     }
 
@@ -100,22 +102,12 @@ var signetTypelog = function (registrar, parser) {
     function preprocessSubtypeData(typeDef) {
         var predicate = registrar.get(typeDef.type);
         var preprocess = typeof predicate.preprocess === 'function' ? predicate.preprocess : identity;
+        var typeDefClone = merge({}, typeDef);
 
-        return {
-            name: typeDef.name,
-            type: typeDef.type,
-            subtype: preprocess(typeDef.subtype),
-            originalSubtype: typeDef.subtype,
-            optional: typeDef.optional
-        };
-    }
+        typeDefClone.subtype = preprocess(typeDef.subtype);
+        typeDefClone.predicate = predicate;
 
-    function verifyType(typeDef, parentType, value) {
-        var parentTypeDef = parser.parseType(parentType);
-        parentTypeDef.subtype.concat(typeDef.originalSubtype);
-
-        return isTypeOf(parentTypeDef)(value) && validateType(typeDef)(value);
-
+        return typeDefClone;
     }
 
     function getTypeChain(typeName) {
