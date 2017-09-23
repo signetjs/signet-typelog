@@ -80,20 +80,38 @@ var signetTypelog = function (registrar) {
         }
     }
 
-    function isSubtypeOf(parentName) {
-        return function (childName) {
+    function isSubtypeOfBuilder(parentName) {
+        return memoize(function (childName) {
             var subtypeCheck = registrar.get(childName).isSubtypeOf;
             return subtypeCheck(parentName);
-        };
+        });
     }
 
-    function isTypeOf(typeDef) {
-        var processedTypeDef = preprocessSubtypeData(typeDef);
+    var isSubtypeOf = memoize(isSubtypeOfBuilder);
 
+    function memoize(action) {
+        var memoStore = {};
+
+        return function (value) {
+            var key = JSON.stringify(value);
+
+            if(typeof memoStore[key] === 'undefined') {
+                memoStore[key] = action(value);
+            }
+
+            return memoStore[key];
+        }
+    }
+
+    function isTypeOfFactory(typeDef) {
+        var processedTypeDef = preprocessSubtypeData(typeDef);
+        
         return function (value) {
             return validateType(processedTypeDef)(value);
         };
     }
+
+    var isTypeOf = memoize(isTypeOfFactory);
 
     function identity(value) {
         return value;
